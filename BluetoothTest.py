@@ -22,24 +22,27 @@ advertise_service(server_sock, name,
                   service_classes = [uuid, SERIAL_PORT_CLASS],
                   profiles = [SERIAL_PORT_PROFILE],
                   protocols = [OBEX_UUID])
+while True:
+    print("Waiting for connection...")
+    clientSock, address = server_sock.accept()
+    print("Accepted connection from ", address)
 
-clientSock, address = server_sock.accept()
-print("Accepted connection from ", address)
-
-try:
     while True:
-        data = clientSock.recv(1024)
+        try:
+            data = clientSock.recv(1024)
+        except BluetoothError as e:
+            break
+        
         if len(data) == 0: break
         decoded = data.decode("utf-8")
-        print("Received from device #1: " + decoded)
-        
-except IOError:
-    pass
-
-time.sleep(5)
-print("Have slept")
-
-clientSock.close()
+        dataList = list(filter(None, decoded.split(";")));
+        for decodedData in dataList:
+            print("Received from device: " + decodedData)
+            clientSock.send("Data received")
+    
+    clientSock.close()
+    print("Connection closed")
+    
 server_sock.close()
 
 
