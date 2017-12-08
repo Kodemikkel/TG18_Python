@@ -220,26 +220,26 @@ def smooth(aVal):
         time.sleep(.05)
         
 def lightControl(data):
-    if data[3] == "g": #Flash
-        aVal = int(data[9:11], 16) / 510
+    if data[2] == "g": #Flash
+        aVal = int(data[8:10], 16) / 510
         flash(aVal)
     
-    elif data[3] == "h": #Strobe
-        aVal = int(data[9:11], 16) / 255
+    elif data[2] == "h": #Strobe
+        aVal = int(data[8:10], 16) / 255
         strobe(aVal)
         
-    elif data[3] == "i": #Fade
-        aVal = int(data[9:11], 16)
+    elif data[2] == "i": #Fade
+        aVal = int(data[8:10], 16)
         fade(aval)
         
-    elif data[3] == "j": #Smooth
-        aVal = int(data[9:11], 16)
+    elif data[2] == "j": #Smooth
+        aVal = int(data[8:10], 16)
         smooth(aVal)
     
     else:
-        rVal = int(data[3:5], 16)
-        gVal = int(data[5:7], 16)
-        bVal = int(data[7:9], 16)
+        rVal = int(data[2:4], 16)
+        gVal = int(data[4:6], 16)
+        bVal = int(data[6:8], 16)
         ledVal["R"] = rVal
         ledVal["G"] = gVal
         ledVal["B"] = bVal
@@ -269,16 +269,16 @@ def pcControl(action):
     
       
 def getPrefix(data):
-    if data[1] == "1": #System
+    if data[0] == "1": #System
         print(data)
-    elif data[1] == "2": #Light control
+    elif data[0] == "2": #Light control
         lightControl(data)
             
-    elif data[1] == "3": #Height control
-        heightControl(data[3])
+    elif data[0] == "3": #Height control
+        heightControl(data[2])
         
-    elif data[1] == "4": #PC control
-        pcControl(data[3])
+    elif data[0] == "4": #PC control
+        pcControl(data[2])
 
 while True:
     print("Waiting for connection...")
