@@ -19,6 +19,8 @@ pinPcOnOff = 29
 pinPcReset = 31
 pinEndStopTop = 7
 pinEndStopBottom = 22
+pinLevelSwitch = 38
+pinProximitySwitch = 40
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -237,34 +239,35 @@ def lightControl(data):
         smooth(aVal)
     
     else:
-        rVal = int(data[2:4], 16)
-        gVal = int(data[4:6], 16)
-        bVal = int(data[6:8], 16)
+        rVal = (int(data[2:4], 16) * 100) / 255
+        gVal = (int(data[4:6], 16) * 100) / 255
+        bVal = (int(data[6:8], 16) * 100) / 255
         ledVal["R"] = rVal
         ledVal["G"] = gVal
         ledVal["B"] = bVal
 
 def heightControl(action):
-    if action == "g": #Top
+    if action == "G": #Top
+        print("HERE")
         GPIO.output(pinMonitorUp, 1)
-    elif action == "h": #Up
+    elif action == "H": #Up
         GPIO.output(pinMonitorUp, 0)
-    elif action == "i": #Stop
+    elif action == "I": #Stop
         GPIO.output(pinMonitorUp, 0)
         GPIO.output(pinMonitorDown, 0)
-    elif action == "j": #Down
+    elif action == "J": #Down
         GPIO.output(pinMonitorDown, 0)
-    elif action == "k": #Bottom
+    elif action == "K": #Bottom
         GPIO.output(pinMonitorDown, 1)
 
 def pcControl(action):
-    if action == "g": #On/Off
+    if action == "G": #On/Off
         GPIO.output(pinPcOnOff, 1)
-    elif action == "h": #On/Off release
+    elif action == "H": #On/Off release
         GPIO.output(pinPcOnOff, 0)
-    elif action == "i": #Reset
+    elif action == "I": #Reset
         GPIO.output(pinPcReset, 1)
-    elif action == "j": #Reset release
+    elif action == "J": #Reset release
         GPIO.output(pinPcReset, 0)
     
       
@@ -279,6 +282,23 @@ def getPrefix(data):
         
     elif data[0] == "4": #PC control
         pcControl(data[2])
+
+def changeLED():
+    if ledVal["R"] != ledValPrev["R"]:
+        print(ledVal["R"])
+        rPin.ChangeDutyCycle(ledVal["R"])
+        ledValPrev["R"] = ledVal["R"]
+    
+    if ledVal["G"] != ledValPrev["G"]:
+        print(ledVal["G"])
+        gPin.ChangeDutyCycle(ledVal["G"])
+        ledValPrev["G"] = ledVal["G"]
+    
+    if ledVal["B"] != ledValPrev["B"]:
+        print(ledVal["B"])
+        bPin.ChangeDutyCycle(ledVal["B"])
+        ledValPrev["B"] = ledVal["B"]
+    
 
 while True:
     print("Waiting for connection...")
@@ -298,26 +318,12 @@ while True:
             print("Received from device: " + decodedData)
             clientSock.send("Data received")
             getPrefix(decodedData)
+            changeLED();
     
     clientSock.close()
     print("Connection closed")
     
 server_sock.close()
-
-
-
-while True:
-    if ledVal["R"] != ledValPrev["R"]:
-        rPin.ChangeDutyCycle(ledVal["R"])
-        ledValPrev["R"] = ledVal["R"]
-    
-    if ledVal["G"] != ledValPrev["G"]:
-        rPin.ChangeDutyCycle(ledVal["G"])
-        ledValPrev["G"] = ledVal["G"]
-    
-    if ledVal["B"] != ledValPrev["B"]:
-        rPin.ChangeDutyCycle(ledVal["B"])
-        ledValPrev["B"] = ledVal["B"]
     
 
 ##GPIO.setmode(GPIO.BOARD)
