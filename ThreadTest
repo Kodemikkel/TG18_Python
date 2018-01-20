@@ -10,8 +10,10 @@ import sys
 
 # Function for setting up everything
 def setup():
-    global ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
-    global ledValPrev = {"R": 0, "G": 0, "B": 0}
+    global ledVal
+    ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
+    global ledValPrev
+    ledValPrev = {"R": 0, "G": 0, "B": 0}
 
     pinMonitorUp = 16
     pinMonitorDown = 18
@@ -25,14 +27,6 @@ def setup():
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BOARD)
 
-    global rPin = GPIO.PWM(11,490) #R pin
-    global gPin = GPIO.PWM(13,490) #G pin
-    global bPin = GPIO.PWM(15,490) #B pin
-
-    rPin.start(0) #Start R pin with a value of 0
-    gPin.start(0) #Start G pin with a value of 0
-    bPin.start(0) #Start B pin with a value of 0
-
     GPIO.setup(pinMonitorUp, GPIO.OUT) #Monitor up
     GPIO.setup(pinMonitorDown, GPIO.OUT) #Monitor down
 
@@ -45,6 +39,17 @@ def setup():
     GPIO.setup(11,GPIO.OUT) #R
     GPIO.setup(13,GPIO.OUT) #G
     GPIO.setup(15,GPIO.OUT) #B
+
+    global rPin
+    rPin = GPIO.PWM(11,490) #R pin
+    global gPin
+    gPin = GPIO.PWM(13,490) #G pin
+    global bPin
+    bPin = GPIO.PWM(15,490) #B pin
+
+    rPin.start(0) #Start R pin with a value of 0
+    gPin.start(0) #Start G pin with a value of 0
+    bPin.start(0) #Start B pin with a value of 0
 
 def flash(aVal):
     ledVal["R"] = 100
@@ -280,20 +285,22 @@ def lightControl(in_q):
                 ledVal["G"] = gVal
                 ledVal["B"] = bVal
 
-            if ledVal["R"] != ledValPrev["R"]:
-                print(ledVal["R"])
-                rPin.ChangeDutyCycle(ledVal["R"])
-                ledValPrev["R"] = ledVal["R"]
+def changeLED():
+    while true:
+        if ledVal["R"] != ledValPrev["R"]:
+            print(ledVal["R"])
+            rPin.ChangeDutyCycle(ledVal["R"])
+            ledValPrev["R"] = ledVal["R"]
 
-            if ledVal["G"] != ledValPrev["G"]:
-                print(ledVal["G"])
-                gPin.ChangeDutyCycle(ledVal["G"])
-                ledValPrev["G"] = ledVal["G"]
+        if ledVal["G"] != ledValPrev["G"]:
+            print(ledVal["G"])
+            gPin.ChangeDutyCycle(ledVal["G"])
+            ledValPrev["G"] = ledVal["G"]
 
-            if ledVal["B"] != ledValPrev["B"]:
-                print(ledVal["B"])
-                bPin.ChangeDutyCycle(ledVal["B"])
-                ledValPrev["B"] = ledVal["B"]
+        if ledVal["B"] != ledValPrev["B"]:
+            print(ledVal["B"])
+            bPin.ChangeDutyCycle(ledVal["B"])
+            ledValPrev["B"] = ledVal["B"]
 
 # A thread for height control
 def heightControl(in_q):
@@ -317,5 +324,7 @@ setup()
 q = Queue()
 t1 = Thread(target=bluetoothConnection, args=(q,))
 t2 = Thread(target=lightControl, args=(q,))
+t3 = Thread(target=changeLED)
 t1.start()
 t2.start()
+t3.start()
