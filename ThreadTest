@@ -35,14 +35,6 @@ def setup():
     GPIO.setup(13,GPIO.OUT) #G
     GPIO.setup(15,GPIO.OUT) #B
 
-    rPin = GPIO.PWM(11,490) #R pin
-    gPin = GPIO.PWM(13,490) #G pin
-    bPin = GPIO.PWM(15,490) #B pin
-
-    rPin.start(0) #Start R pin with a value of 0
-    gPin.start(0) #Start G pin with a value of 0
-    bPin.start(0) #Start B pin with a value of 0
-
 def flash(aVal):
     ledVal["R"] = 100
     ledVal["G"] = 0
@@ -250,6 +242,15 @@ def bluetoothConnection(out_q):
 def lightControl(in_q):
     ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
     ledValPrev = {"R": 0, "G": 0, "B": 0}
+
+    rPin = GPIO.PWM(11,490) #R pin
+    gPin = GPIO.PWM(13,490) #G pin
+    bPin = GPIO.PWM(15,490) #B pin
+
+    rPin.start(0) #Start R pin with a value of 0
+    gPin.start(0) #Start G pin with a value of 0
+    bPin.start(0) #Start B pin with a value of 0
+
     while True:
         # Get data from the queue
         data = in_q.get()
