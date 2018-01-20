@@ -36,39 +36,39 @@ def setup():
     GPIO.setup(15,GPIO.OUT) #B
 
 def flash(aVal):
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 0
+    t2.ledVal["R"] = 100
+    t2.ledVal["G"] = 0
+    t2.ledVal["B"] = 0
     time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 0
+    t2.ledVal["R"] = 0
+    t2.ledVal["G"] = 100
+    t2.ledVal["B"] = 0
     time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 0
-    ledVal["B"] = 100
+    t2.ledVal["R"] = 0
+    t2.ledVal["G"] = 0
+    t2.ledVal["B"] = 100
     time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 0
+    t2.ledVal["R"] = 100
+    t2.ledVal["G"] = 100
+    t2.ledVal["B"] = 0
     time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 100
+    t2.ledVal["R"] = 100
+    t2.ledVal["G"] = 0
+    t2.ledVal["B"] = 100
     time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 100
+    t2.ledVal["R"] = 0
+    t2.ledVal["G"] = 100
+    t2.ledVal["B"] = 100
     time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 100
+    t2.ledVal["R"] = 100
+    t2.ledVal["G"] = 100
+    t2.ledVal["B"] = 100
     time.sleep(aVal)
 
 def strobe(aVal):
