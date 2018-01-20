@@ -14,6 +14,8 @@ def setup():
     ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
     global ledValPrev
     ledValPrev = {"R": 0, "G": 0, "B": 0}
+    global lightFunction
+    lightFunction = ""
 
     pinMonitorUp = 16
     pinMonitorDown = 18
@@ -52,40 +54,41 @@ def setup():
     bPin.start(0) #Start B pin with a value of 0
 
 def flash(aVal):
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 0
-    time.sleep(aVal)
+    while lightFunction == "flash"
+        ledVal["R"] = 100
+        ledVal["G"] = 0
+        ledVal["B"] = 0
+        time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 0
-    time.sleep(aVal)
+        ledVal["R"] = 0
+        ledVal["G"] = 100
+        ledVal["B"] = 0
+        time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 0
-    ledVal["B"] = 100
-    time.sleep(aVal)
+        ledVal["R"] = 0
+        ledVal["G"] = 0
+        ledVal["B"] = 100
+        time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 0
-    time.sleep(aVal)
+        ledVal["R"] = 100
+        ledVal["G"] = 100
+        ledVal["B"] = 0
+        time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 100
-    time.sleep(aVal)
+        ledVal["R"] = 100
+        ledVal["G"] = 0
+        ledVal["B"] = 100
+        time.sleep(aVal)
 
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 100
-    time.sleep(aVal)
+        ledVal["R"] = 0
+        ledVal["G"] = 100
+        ledVal["B"] = 100
+        time.sleep(aVal)
 
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 100
-    time.sleep(aVal)
+        ledVal["R"] = 100
+        ledVal["G"] = 100
+        ledVal["B"] = 100
+        time.sleep(aVal)
 
 def strobe(aVal):
     for strobeVal in range(255):
@@ -262,22 +265,27 @@ def lightControl(in_q):
         # Control the lights if the prefix matches lightControl
         if data[0] == "2":
             if data[2] == "G": #Flash
-                aVal = int(data[8:10], 16) / 510
+                aVal = ((int(data[8:10], 16) * 2.9) / 255) + 0.1
+                lightFunction = "flash"
                 flash(aVal)
 
             elif data[2] == "H": #Strobe
                 aVal = int(data[8:10], 16) / 255
+                lightFunction = "strobe"
                 strobe(aVal)
 
             elif data[2] == "I": #Fade
                 aVal = int(data[8:10], 16)
+                lightFunction = "fade"
                 fade(aval)
 
             elif data[2] == "J": #Smooth
                 aVal = int(data[8:10], 16)
+                lightFunction = "smooth"
                 smooth(aVal)
 
             else:
+                lightFunction = ""
                 rVal = (int(data[2:4], 16) * 100) / 255
                 gVal = (int(data[4:6], 16) * 100) / 255
                 bVal = (int(data[6:8], 16) * 100) / 255
