@@ -1,0 +1,305 @@
+try:
+    import RPi.GPIO as GPIO
+except RunTimeError:
+    print("Error importing RPi.GPIO.. Try running as admin")
+from queue import Queue
+from threading import Thread
+from bluetooth import *
+import time
+import sys
+
+# Function for setting up everything
+def setup():
+    pinMonitorUp = 16
+    pinMonitorDown = 18
+    pinPcOnOff = 29
+    pinPcReset = 31
+    pinEndStopTop = 7
+    pinEndStopBottom = 22
+    pinLevelSwitch = 38
+    pinProximitySwitch = 40
+
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BOARD)
+
+    GPIO.setup(pinMonitorUp, GPIO.OUT) #Monitor up
+    GPIO.setup(pinMonitorDown, GPIO.OUT) #Monitor down
+
+    GPIO.setup(pinPcOnOff, GPIO.OUT) #PC on/off
+    GPIO.setup(pinPcReset, GPIO.OUT) #PC reset
+
+    GPIO.setup(pinEndStopTop, GPIO.IN) #End stop top
+    GPIO.setup(pinEndStopBottom, GPIO.IN) #End stop bottom
+
+    GPIO.setup(11,GPIO.OUT) #R
+    GPIO.setup(13,GPIO.OUT) #G
+    GPIO.setup(15,GPIO.OUT) #B
+
+    rPin = GPIO.PWM(11,490) #R pin
+    gPin = GPIO.PWM(13,490) #G pin
+    bPin = GPIO.PWM(15,490) #B pin
+
+    rPin.start(0) #Start R pin with a value of 0
+    gPin.start(0) #Start G pin with a value of 0
+    bPin.start(0) #Start B pin with a value of 0
+
+def flash(aVal):
+    ledVal["R"] = 100
+    ledVal["G"] = 0
+    ledVal["B"] = 0
+    time.sleep(aVal)
+
+    ledVal["R"] = 0
+    ledVal["G"] = 100
+    ledVal["B"] = 0
+    time.sleep(aVal)
+
+    ledVal["R"] = 0
+    ledVal["G"] = 0
+    ledVal["B"] = 100
+    time.sleep(aVal)
+
+    ledVal["R"] = 100
+    ledVal["G"] = 100
+    ledVal["B"] = 0
+    time.sleep(aVal)
+
+    ledVal["R"] = 100
+    ledVal["G"] = 0
+    ledVal["B"] = 100
+    time.sleep(aVal)
+
+    ledVal["R"] = 0
+    ledVal["G"] = 100
+    ledVal["B"] = 100
+    time.sleep(aVal)
+
+    ledVal["R"] = 100
+    ledVal["G"] = 100
+    ledVal["B"] = 100
+    time.sleep(aVal)
+
+def strobe(aVal):
+    for strobeVal in range(255):
+        strobeVal = strobeVal + aVal
+        if strobeVal > 255:
+            strobeVal = 255
+
+        ledVal["R"] = (255 - strobeVal)
+        ledVal["G"] = (255 - strobeVal)
+        ledVal["B"] = (255 - strobeVal)
+        time.sleep(.05)
+
+    for strobeVal in range(255):
+        strobeVal = strobeVal + aVal
+        if strobeVal > 255:
+            strobeVal = 255
+
+        ledVal["R"] = strobeVal
+        ledVal["G"] = strobeVal
+        ledVal["B"] = strobeVal
+        time.sleep(.05)
+
+def fade(aVal):
+    ledVal["G"] = 0
+    ledVal["B"] = 0
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["R"] = fadeVal
+        time.sleep(.05)
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["R"] = (255 - fadeVal)
+        time.sleep(.05)
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["G"] = fadeVal
+        time.sleep(.05)
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["G"] = (255 - fadeVal)
+        time.sleep(.05)
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["B"] = fadeVal
+        time.sleep(.05)
+
+    for fadeVal in range(255):
+        fadeVal = fadeVal + aVal
+        if fadeVal > 255:
+            fadeVal = 255
+
+        ledVal["B"] = (255 - fadeVal)
+        time.sleep(.05)
+
+def smooth(aVal):
+    ledVal["R"] = 255
+    ledVal["G"] = 0
+    ledVal["B"] = 0
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["G"] = smoothVal
+        time.sleep(.05)
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["R"] = (255 - smoothVal)
+        time.sleep(.05)
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["B"] = smoothVal
+        time.sleep(.05)
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["G"] = (255 - smoothVal)
+        time.sleep(.05)
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["R"] = smoothVal
+        time.sleep(.05)
+
+    for smoothVal in range(255):
+        smoothVal = smoothVal + aVal
+        if smoothVal > 255:
+            smoothVal = 255
+
+        ledVal["B"] = (255 - smoothVal)
+        time.sleep(.05)
+
+# A thread for bluetooth
+def bluetoothConnection(out_q):
+    name = "Raspberry_BT_Server"
+    uuid = "00001101-0000-1000-8000-00805F9B34FB"
+
+    server_sock = BluetoothSocket(RFCOMM)
+
+    server_sock.bind(("", PORT_ANY))
+    server_sock.listen(1)
+
+    advertise_service(server_sock, name,
+                      service_id = uuid,
+                      service_classes = [uuid, SERIAL_PORT_CLASS],
+                      profiles = [SERIAL_PORT_PROFILE],
+                      protocols = [OBEX_UUID])
+
+    while True:
+        print("Waiting for connection...")
+        clientSock, address = server_sock.accept()
+        print("Accepted connection from ", address)
+
+        while True:
+            try:
+                data = clientSock.recv(1024)
+            except BluetoothError as e:
+                break
+
+            if len(data) == 0: break
+            decoded = data.decode("utf-8")
+            dataList = list(filter(None, decoded.split(";")));
+            for decodedData in dataList:
+                print("Received from device: " + decodedData)
+                clientSock.send("Data received")
+                out_q.put(decodedData)
+
+        clientSock.close()
+        print("Connection closed")
+
+    server_sock.close()
+
+
+# A thread for light control
+def lightControl(in_q):
+    ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
+    ledValPrev = {"R": 0, "G": 0, "B": 0}
+    while True:
+        # Get data from the queue
+        data = in_q.get()
+        # Control the lights if the prefix matches lightControl
+        if data[0] == "2":
+            if data[2] == "G": #Flash
+                aVal = int(data[8:10], 16) / 510
+                flash(aVal)
+
+            elif data[2] == "H": #Strobe
+                aVal = int(data[8:10], 16) / 255
+                strobe(aVal)
+
+            elif data[2] == "I": #Fade
+                aVal = int(data[8:10], 16)
+                fade(aval)
+
+            elif data[2] == "J": #Smooth
+                aVal = int(data[8:10], 16)
+                smooth(aVal)
+
+            else:
+                rVal = (int(data[2:4], 16) * 100) / 255
+                gVal = (int(data[4:6], 16) * 100) / 255
+                bVal = (int(data[6:8], 16) * 100) / 255
+                ledVal["R"] = rVal
+                ledVal["G"] = gVal
+                ledVal["B"] = bVal
+
+# A thread for height control
+def heightControl(in_q):
+    while True:
+        # Get some data
+        data = in_q.get()
+        # Process the data
+
+
+# A thread for pc control
+def pcControl(in_q):
+    while True:
+        # Get some data
+        data = in_q.get()
+        # Process the data
+        print(data)
+
+setup()
+
+# Create the shared queue and launch both threads
+q = Queue()
+t1 = Thread(target=bluetoothConnection, args=(q,))
+t2 = Thread(target=lightControl, args=(q,))
+t1.start()
+t2.start()
