@@ -10,6 +10,9 @@ import sys
 
 # Function for setting up everything
 def setup():
+    global ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
+    global ledValPrev = {"R": 0, "G": 0, "B": 0}
+
     pinMonitorUp = 16
     pinMonitorDown = 18
     pinPcOnOff = 29
@@ -21,6 +24,14 @@ def setup():
 
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BOARD)
+
+    global rPin = GPIO.PWM(11,490) #R pin
+    global gPin = GPIO.PWM(13,490) #G pin
+    global bPin = GPIO.PWM(15,490) #B pin
+
+    rPin.start(0) #Start R pin with a value of 0
+    gPin.start(0) #Start G pin with a value of 0
+    bPin.start(0) #Start B pin with a value of 0
 
     GPIO.setup(pinMonitorUp, GPIO.OUT) #Monitor up
     GPIO.setup(pinMonitorDown, GPIO.OUT) #Monitor down
@@ -36,39 +47,39 @@ def setup():
     GPIO.setup(15,GPIO.OUT) #B
 
 def flash(aVal):
-    t2.ledVal["R"] = 100
-    t2.ledVal["G"] = 0
-    t2.ledVal["B"] = 0
+    ledVal["R"] = 100
+    ledVal["G"] = 0
+    ledVal["B"] = 0
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 0
-    t2.ledVal["G"] = 100
-    t2.ledVal["B"] = 0
+    ledVal["R"] = 0
+    ledVal["G"] = 100
+    ledVal["B"] = 0
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 0
-    t2.ledVal["G"] = 0
-    t2.ledVal["B"] = 100
+    ledVal["R"] = 0
+    ledVal["G"] = 0
+    ledVal["B"] = 100
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 100
-    t2.ledVal["G"] = 100
-    t2.ledVal["B"] = 0
+    ledVal["R"] = 100
+    ledVal["G"] = 100
+    ledVal["B"] = 0
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 100
-    t2.ledVal["G"] = 0
-    t2.ledVal["B"] = 100
+    ledVal["R"] = 100
+    ledVal["G"] = 0
+    ledVal["B"] = 100
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 0
-    t2.ledVal["G"] = 100
-    t2.ledVal["B"] = 100
+    ledVal["R"] = 0
+    ledVal["G"] = 100
+    ledVal["B"] = 100
     time.sleep(aVal)
 
-    t2.ledVal["R"] = 100
-    t2.ledVal["G"] = 100
-    t2.ledVal["B"] = 100
+    ledVal["R"] = 100
+    ledVal["G"] = 100
+    ledVal["B"] = 100
     time.sleep(aVal)
 
 def strobe(aVal):
@@ -240,17 +251,6 @@ def bluetoothConnection(out_q):
 
 # A thread for light control
 def lightControl(in_q):
-    ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
-    ledValPrev = {"R": 0, "G": 0, "B": 0}
-
-    rPin = GPIO.PWM(11,490) #R pin
-    gPin = GPIO.PWM(13,490) #G pin
-    bPin = GPIO.PWM(15,490) #B pin
-
-    rPin.start(0) #Start R pin with a value of 0
-    gPin.start(0) #Start G pin with a value of 0
-    bPin.start(0) #Start B pin with a value of 0
-
     while True:
         # Get data from the queue
         data = in_q.get()
