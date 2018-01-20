@@ -279,6 +279,21 @@ def lightControl(in_q):
                 ledVal["G"] = gVal
                 ledVal["B"] = bVal
 
+            if ledVal["R"] != ledValPrev["R"]:
+                print(ledVal["R"])
+                rPin.ChangeDutyCycle(ledVal["R"])
+                ledValPrev["R"] = ledVal["R"]
+
+            if ledVal["G"] != ledValPrev["G"]:
+                print(ledVal["G"])
+                gPin.ChangeDutyCycle(ledVal["G"])
+                ledValPrev["G"] = ledVal["G"]
+
+            if ledVal["B"] != ledValPrev["B"]:
+                print(ledVal["B"])
+                bPin.ChangeDutyCycle(ledVal["B"])
+                ledValPrev["B"] = ledVal["B"]
+
 # A thread for height control
 def heightControl(in_q):
     while True:
