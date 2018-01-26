@@ -1,340 +1,355 @@
-try:
-    import RPi.GPIO as GPIO
-except RunTimeError:
-    print("Error importing RPi.GPIO.. Try running as admin")
-    
+import pigpio
+from multiprocessing import Queue
+import threading
 from bluetooth import *
 import time
 import sys
 
-print("Running version " + sys.version)
 
 
-ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
-ledValPrev = {"R": 0, "G": 0, "B": 0}
+# Function for setting up everything
+def setup():
+    print("Running version " + sys.version)
+    global pi
+    pi = pigpio.pi()
 
-pinMonitorUp = 16
-pinMonitorDown = 18
-pinPcOnOff = 29
-pinPcReset = 31
-pinEndStopTop = 7
-pinEndStopBottom = 22
-pinLevelSwitch = 38
-pinProximitySwitch = 40
+    global ledVal
+    global ledValPrev
+    ledVal = {"R": 0, "G": 0, "B": 0, "A": 0}
+    ledValPrev = {"R": 0, "G": 0, "B": 0, "A": 0}
 
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
+    global pinMonitorUp
+    global pinMonitorDown
+    global pinPcOnOff
+    global pinPcReset
+    global pinEndStopTop
+    global pinEndStopBottom
+    global pinLevelSwitch
+    global pinProximitySwitch
 
-GPIO.setup(pinMonitorUp, GPIO.OUT) #Monitor up
-GPIO.setup(pinMonitorDown, GPIO.OUT) #Monitor down
-
-GPIO.setup(pinPcOnOff, GPIO.OUT) #PC on/off
-GPIO.setup(pinPcReset, GPIO.OUT) #PC reset
-
-GPIO.setup(pinEndStopTop, GPIO.IN) #End stop top
-GPIO.setup(pinEndStopBottom, GPIO.IN) #End stop bottom
-
-GPIO.setup(11,GPIO.OUT) #R
-GPIO.setup(13,GPIO.OUT) #G
-GPIO.setup(15,GPIO.OUT) #B
-
-rPin = GPIO.PWM(11,490) #R pin
-gPin = GPIO.PWM(13,490) #G pin
-bPin = GPIO.PWM(15,490) #B pin
-
-rPin.start(0) #Start R pin with a value of 0
-gPin.start(0) #Start G pin with a value of 0
-bPin.start(0) #Start B pin with a value of 0
-
-name = "Raspberry_BT_Server"
-uuid = "00001101-0000-1000-8000-00805F9B34FB"
-
-server_sock = BluetoothSocket(RFCOMM)
-
-server_sock.bind(("", PORT_ANY))
-server_sock.listen(1)
-
-advertise_service(server_sock, name,
-                  service_id = uuid,
-                  service_classes = [uuid, SERIAL_PORT_CLASS],
-                  profiles = [SERIAL_PORT_PROFILE],
-                  protocols = [OBEX_UUID])
-def flash(aVal):
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 0
-    time.sleep(aVal)
+    pinMonitorUp = 23#16
+    pinMonitorDown = 24#18
+    pinPcOnOff = 5#29
+    pinPcReset = 6#31
+    pinEndStopTop = 4#7
+    pinEndStopBottom = 25#22
+    pinLevelSwitch = 20#38
+    pinProximitySwitch = 21#40
     
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 0
-    time.sleep(aVal)
-    
-    ledVal["R"] = 0
-    ledVal["G"] = 0
-    ledVal["B"] = 100
-    time.sleep(aVal)
-    
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 0
-    time.sleep(aVal)
-    
-    ledVal["R"] = 100
-    ledVal["G"] = 0
-    ledVal["B"] = 100
-    time.sleep(aVal)
-    
-    ledVal["R"] = 0
-    ledVal["G"] = 100
-    ledVal["B"] = 100
-    time.sleep(aVal)
-    
-    ledVal["R"] = 100
-    ledVal["G"] = 100
-    ledVal["B"] = 100
-    time.sleep(aVal)
-    
-def strobe(aVal):
-    for strobeVal in range(255):
-        strobeVal = strobeVal + aVal
-        if strobeVal > 255:
-            strobeVal = 255
-            
-        ledVal["R"] = (255 - strobeVal)
-        ledVal["G"] = (255 - strobeVal)
-        ledVal["B"] = (255 - strobeVal)
-        time.sleep(.05)
-        
-    for strobeVal in range(255):
-        strobeVal = strobeVal + aVal
-        if strobeVal > 255:
-            strobeVal = 255
-            
-        ledVal["R"] = strobeVal
-        ledVal["G"] = strobeVal
-        ledVal["B"] = strobeVal
-        time.sleep(.05)
-    
-def fade(aVal):
-    ledVal["G"] = 0
-    ledVal["B"] = 0
-    
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["R"] = fadeVal
-        time.sleep(.05)
-        
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["R"] = (255 - fadeVal)
-        time.sleep(.05)
-        
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["G"] = fadeVal
-        time.sleep(.05)
-        
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["G"] = (255 - fadeVal)
-        time.sleep(.05)
-        
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["B"] = fadeVal
-        time.sleep(.05)
-        
-    for fadeVal in range(255):
-        fadeVal = fadeVal + aVal
-        if fadeVal > 255:
-            fadeVal = 255
-            
-        ledVal["B"] = (255 - fadeVal)
-        time.sleep(.05)
-        
-def smooth(aVal):
-    ledVal["R"] = 255
-    ledVal["G"] = 0
-    ledVal["B"] = 0
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["G"] = smoothVal
-        time.sleep(.05)
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["R"] = (255 - smoothVal)
-        time.sleep(.05)
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["B"] = smoothVal
-        time.sleep(.05)
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["G"] = (255 - smoothVal)
-        time.sleep(.05)
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["R"] = smoothVal
-        time.sleep(.05)
-        
-    for smoothVal in range(255):
-        smoothVal = smoothVal + aVal
-        if smoothVal > 255:
-            smoothVal = 255
-            
-        ledVal["B"] = (255 - smoothVal)
-        time.sleep(.05)
-        
-def lightControl(data):
-    if data[2] == "g": #Flash
-        aVal = int(data[8:10], 16) / 510
-        flash(aVal)
-    
-    elif data[2] == "h": #Strobe
-        aVal = int(data[8:10], 16) / 255
-        strobe(aVal)
-        
-    elif data[2] == "i": #Fade
-        aVal = int(data[8:10], 16)
-        fade(aval)
-        
-    elif data[2] == "j": #Smooth
-        aVal = int(data[8:10], 16)
-        smooth(aVal)
-    
-    else:
-        rVal = (int(data[2:4], 16) * 100) / 255
-        gVal = (int(data[4:6], 16) * 100) / 255
-        bVal = (int(data[6:8], 16) * 100) / 255
-        ledVal["R"] = rVal
-        ledVal["G"] = gVal
-        ledVal["B"] = bVal
+    global pinR
+    global pinG
+    global pinB
+    pinR = 17 #11
+    pinG = 27 #13
+    pinB = 22 #15
 
-def heightControl(action):
-    if action == "G": #Top
-        print("HERE")
-        GPIO.output(pinMonitorUp, 1)
-    elif action == "H": #Up
-        GPIO.output(pinMonitorUp, 0)
-    elif action == "I": #Stop
-        GPIO.output(pinMonitorUp, 0)
-        GPIO.output(pinMonitorDown, 0)
-    elif action == "J": #Down
-        GPIO.output(pinMonitorDown, 0)
-    elif action == "K": #Bottom
-        GPIO.output(pinMonitorDown, 1)
+    pi.set_PWM_frequency(pinR, 200)
+    pi.set_PWM_frequency(pinG, 200)
+    pi.set_PWM_frequency(pinB, 200)
 
-def pcControl(action):
-    if action == "G": #On/Off
-        GPIO.output(pinPcOnOff, 1)
-    elif action == "H": #On/Off release
-        GPIO.output(pinPcOnOff, 0)
-    elif action == "I": #Reset
-        GPIO.output(pinPcReset, 1)
-    elif action == "J": #Reset release
-        GPIO.output(pinPcReset, 0)
-    
-      
-def getPrefix(data):
-    if data[0] == "1": #System
-        print(data)
-    elif data[0] == "2": #Light control
-        lightControl(data)
+    pi.set_PWM_dutycycle(pinR, 0)
+    pi.set_PWM_dutycycle(pinG, 0)
+    pi.set_PWM_dutycycle(pinB, 0)
+
+    global aVal
+    global mode
+    aVal = 255
+    mode = "solid"
             
-    elif data[0] == "3": #Height control
-        heightControl(data[2])
+# A thread for bluetooth
+def bluetoothConnection(out_q):
         
-    elif data[0] == "4": #PC control
-        pcControl(data[2])
+    name = "Raspberry_BT_Server"
+    uuid = "00001101-0000-1000-8000-00805F9B34FB"
 
-def changeLED():
-    if ledVal["R"] != ledValPrev["R"]:
-        print(ledVal["R"])
-        rPin.ChangeDutyCycle(ledVal["R"])
-        ledValPrev["R"] = ledVal["R"]
-    
-    if ledVal["G"] != ledValPrev["G"]:
-        print(ledVal["G"])
-        gPin.ChangeDutyCycle(ledVal["G"])
-        ledValPrev["G"] = ledVal["G"]
-    
-    if ledVal["B"] != ledValPrev["B"]:
-        print(ledVal["B"])
-        bPin.ChangeDutyCycle(ledVal["B"])
-        ledValPrev["B"] = ledVal["B"]
-    
+    server_sock = BluetoothSocket(RFCOMM)
 
-while True:
-    print("Waiting for connection...")
-    clientSock, address = server_sock.accept()
-    print("Accepted connection from ", address)
+    server_sock.bind(("", PORT_ANY))
+    server_sock.listen(1)
 
+    advertise_service(server_sock, name,
+                      service_id = uuid,
+                      service_classes = [uuid, SERIAL_PORT_CLASS],
+                      profiles = [SERIAL_PORT_PROFILE],
+                      protocols = [OBEX_UUID])
     while True:
-        try:
-            data = clientSock.recv(1024)
-        except BluetoothError as e:
-            break
-        
-        if len(data) == 0: break
-        decoded = data.decode("utf-8")
-        dataList = list(filter(None, decoded.split(";")));
-        for decodedData in dataList:
-            print("Received from device: " + decodedData)
-            clientSock.send("Data received")
-            getPrefix(decodedData)
-            changeLED();
-    
-    clientSock.close()
-    print("Connection closed")
-    
-server_sock.close()
-    
+        global ledVal
+        global mode
+        global aVal
+        print("Waiting for connection...")
+        clientSock, address = server_sock.accept()
+        print("Accepted connection from ", address)
+        if mode == "flash":
+            hexA = "0x{:02x}".format(aVal)[2:]
+            clientSock.send(";1_G00000"+hexA)
+        elif mode == "strobe":
+            hexA = "0x{:02x}".format(aVal)[2:]
+            clientSock.send(";1_H00000"+hexA)
+        elif mode == "fade":
+            hexA = "0x{:02x}".format(aVal)[2:]
+            clientSock.send(";1_I00000"+hexA)
+        elif mode == "smooth":
+            hexA = "0x{:02x}".format(aVal)[2:]
+            clientSock.send(";1_J00000"+hexA)
+        else:
+            hexR = "0x{:02x}".format(int(ledVal["R"]))[2:]
+            hexG = "0x{:02x}".format(int(ledVal["R"]))[2:]
+            hexB = "0x{:02x}".format(int(ledVal["R"]))[2:]
+            hexA = "0x{:02x}".format(int(ledVal["R"]))[2:]
+            clientSock.send(";1_"+hexR+hexG+hexB+hexA)
 
-##GPIO.setmode(GPIO.BOARD)
-##
-##GPIO.setup(21, GPIO.OUT)
-##
-##GPIO.output(21, 1)
-##    
-##time.sleep(2)
-##
-##GPIO.output(21, 0)
-##
-### Clears the GPIO pins used
-##GPIO.cleanup()
+        while True:
+            try:
+                data = clientSock.recv(1024)
+            except BluetoothError as e:
+                break
+            
+            if len(data) == 0: break
+            decoded = data.decode("utf-8")
+            dataList = list(filter(None, decoded.split(";")));
+            for decodedData in dataList:
+                print("Received from device: " + decodedData)
+                clientSock.send("Data recieved")
+                out_q.put(decodedData)
+        
+        clientSock.close()
+        print("Connection closed")
+        
+    server_sock.close()
+    
+    
+# A thread for light control
+def lightControl(in_q):
+    while True:
+        # Get data from the queue
+        data = in_q.get()
+        # Control the lights if the prefix matches lightControl
+        if data[0] == "2": #Light control
+            global aVal
+            global mode
+            global ledVal
+            if data[2] == "G": #Flash
+                aVal = int(data[8:10], 16)
+                mode = "flash"
+            
+            elif data[2] == "H": #Strobe
+                aVal = int(data[8:10], 16)
+                mode = "strobe"
+                
+            elif data[2] == "I": #Fade
+                aVal = int(data[8:10], 16)
+                mode = "fade"
+                
+            elif data[2] == "J": #Smooth
+                aVal = int(data[8:10], 16)
+                mode = "smooth"
+            
+            else:
+                mode = "solid"
+                rVal = int(data[2:4], 16)
+                gVal = int(data[4:6], 16)
+                bVal = int(data[6:8], 16)
+                aVal = int(data[8:10], 16)
+                ledVal["A"] = aVal / 255
+                ledVal["R"] = rVal * ledVal["A"]
+                ledVal["G"] = gVal * ledVal["A"]
+                ledVal["B"] = bVal * ledVal["A"]
+                
+def heightControl(in_q):
+    while True:
+        # Get data from the queue
+        data = in_q.get()
+        if data[0] == "3": #Height control
+            if data[2] == "G": #Top
+                pi.write(pinMonitorUp, 1)
+            elif data[2] == "H": #Up
+                pi.write(pinMonitorUp, 0)
+            elif data[2] == "I": #Stop
+                pi.write(pinMonitorUp, 0)
+                pi.write(pinMonitorDown, 0)
+            elif data[2] == "J": #Down
+                pi.write(pinMonitorDown, 0)
+            elif data[2] == "K": #Bottom
+                pi.write(pinMonitorDown, 1)
+
+def pcControl(in_q):
+    while True:
+        # Get data from the queue
+        data = in_q.get()
+        if data[0] == "4": #PC control
+            if data[2] == "G": #On/Off
+                pi.write(pinPcOnOff, 1)
+            elif data[2] == "H": #On/Off release
+                pi.write(pinPcOnOff, 0)
+            elif data[2] == "I": #Reset
+                pi.write(pinPcReset, 1)
+            elif data[2] == "J": #Reset release
+                pi.write(pinPcReset, 0)
+
+setup()
+
+# Create the shared queue and launch both threads
+q = Queue()
+lm_q = Queue()
+t1 = threading.Thread(target=bluetoothConnection, args=(q,))
+t2 = threading.Thread(target=lightControl, args=(q,))
+t3 = threading.Thread(target=heightControl, args=(q,))
+t4 = threading.Thread(target=pcControl, args=(q,))
+t1.start()
+t2.start()
+t3.start()
+t4.start()
+while True:
+    while mode == "flash":
+        sleepTime = (((aVal - 0) * (0.5 - 0.1)) / (255 - 0)) + 0.1
+        pi.set_PWM_dutycycle(pinR, 255)
+        pi.set_PWM_dutycycle(pinG, 0)
+        pi.set_PWM_dutycycle(pinB, 0)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 0)
+        pi.set_PWM_dutycycle(pinG, 255)
+        pi.set_PWM_dutycycle(pinB, 0)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 0)
+        pi.set_PWM_dutycycle(pinG, 0)
+        pi.set_PWM_dutycycle(pinB, 255)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 255)
+        pi.set_PWM_dutycycle(pinG, 255)
+        pi.set_PWM_dutycycle(pinB, 0)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 255)
+        pi.set_PWM_dutycycle(pinG, 0)
+        pi.set_PWM_dutycycle(pinB, 255)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 0)
+        pi.set_PWM_dutycycle(pinG, 255)
+        pi.set_PWM_dutycycle(pinB, 255)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+        pi.set_PWM_dutycycle(pinR, 255)
+        pi.set_PWM_dutycycle(pinG, 255)
+        pi.set_PWM_dutycycle(pinB, 255)
+        time.sleep(sleepTime)
+        if mode != "flash": break
+        
+    while mode == "strobe":
+        sleepTime = (((aVal - 0) * (0.01 - 0.0005)) / (255 - 0)) + 0.0005
+        for strobeVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinR, strobeVal)
+            pi.set_PWM_dutycycle(pinG, strobeVal)
+            pi.set_PWM_dutycycle(pinB, strobeVal)
+            time.sleep(sleepTime)
+        if mode != "strobe": break
+            
+        for strobeVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinR, strobeVal)
+            pi.set_PWM_dutycycle(pinG, strobeVal)
+            pi.set_PWM_dutycycle(pinB, strobeVal)
+            time.sleep(sleepTime)
+        if mode != "strobe": break
+        
+    while mode == "fade":
+        sleepTime = (((aVal - 0) * (0.01 - 0.001)) / (255 - 0)) + 0.001
+        pi.set_PWM_dutycycle(pinR, 0)
+        pi.set_PWM_dutycycle(pinG, 0)
+        pi.set_PWM_dutycycle(pinB, 0)
+        
+        for fadeVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinR, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+        
+        for fadeVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinR, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+        
+        for fadeVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinG, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+        
+        for fadeVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinG, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+        
+        for fadeVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinB, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+        
+        for fadeVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinB, fadeVal)
+            time.sleep(sleepTime)
+        if mode != "fade": break
+            
+    while mode == "smooth":
+        sleepTime = (((aVal - 0) * (0.05 - 0.0005)) / (255 - 0)) + 0.0005
+        pi.set_PWM_dutycycle(pinR, 255)
+        pi.set_PWM_dutycycle(pinG, 0)
+        pi.set_PWM_dutycycle(pinB, 0)
+        
+        for smoothVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinG, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+        
+        for smoothVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinR, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+        
+        for smoothVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinB, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+        
+        for smoothVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinG, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+        
+        for smoothVal in range(0, 255, 1):
+            pi.set_PWM_dutycycle(pinR, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+        
+        for smoothVal in range(255, 0, -1):
+            pi.set_PWM_dutycycle(pinB, smoothVal)
+            time.sleep(sleepTime)
+        if mode != "smooth": break
+            
+    while mode == "solid":
+        if ledVal["R"] != ledValPrev["R"]:
+            pi.set_PWM_dutycycle(pinR, ledVal["R"])
+            ledValPrev["R"] = ledVal["R"]
+        
+        if ledVal["G"] != ledValPrev["G"]:
+            pi.set_PWM_dutycycle(pinG, ledVal["G"])
+            ledValPrev["G"] = ledVal["G"]
+        
+        if ledVal["B"] != ledValPrev["B"]:
+            pi.set_PWM_dutycycle(pinB, ledVal["B"])
+            ledValPrev["B"] = ledVal["B"]
+            
+        if ledVal["A"] != ledValPrev["A"]:
+            pi.set_PWM_dutycycle(pinR, ledVal["R"])
+            pi.set_PWM_dutycycle(pinR, ledVal["G"])
+            pi.set_PWM_dutycycle(pinR, ledVal["B"])
+            ledValPrev["A"] = ledVal["A"]
+
+pi.stop()
+
