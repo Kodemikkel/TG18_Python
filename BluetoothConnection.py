@@ -1,6 +1,6 @@
 import threading
 from bluetooth import *
-import queue
+import Queue
 
 class BluetoothConnection(threading.Thread):
     def __init__(self, lightQueue, heightQueue, pcQueue, stateQueue):
