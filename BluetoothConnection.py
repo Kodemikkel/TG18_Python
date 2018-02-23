@@ -62,6 +62,6 @@ class BluetoothConnection(threading.Thread):
                 data = self.stateQueue.get(False)
                 self.clientSocket.send(data)
                 print("States synced: ", data)
-            except queue.Empty:
+            except Queue.Empty:
                 print("Nothing to sync")
                 break
