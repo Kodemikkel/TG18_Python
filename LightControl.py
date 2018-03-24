@@ -124,6 +124,7 @@ class LightControl(threading.Thread):
         gValTmp = 0
         bValTmp = 0
         aValTmp = 0
+        aValMult = 0
         first = True
         while self.mode == "solid":
             if not self.enabled: # Check if the LEDs should be enabled or not
@@ -133,28 +134,31 @@ class LightControl(threading.Thread):
                 first = False
             else:
                 if not first:
-                    self.pi.set_PWM_dutycycle(self.pinR, self.rVal * (self.aVal / 255.0))
-                    self.pi.set_PWM_dutycycle(self.pinG, self.gVal * (self.aVal / 255.0))
-                    self.pi.set_PWM_dutycycle(self.pinB, self.bVal * (self.aVal / 255.0))
+                    aValMult = self.aVal / 255
+                    self.pi.set_PWM_dutycycle(self.pinR, self.rVal * aValMult)
+                    self.pi.set_PWM_dutycycle(self.pinG, self.gVal * aValMult)
+                    self.pi.set_PWM_dutycycle(self.pinB, self.bVal * aValMult)
                     first = True
                 else:
                     if rValTmp != self.rVal:
-                        print("r", self.rVal, self.gVal, self.bVal, self.aVal)
-                        self.pi.set_PWM_dutycycle(self.pinR, self.rVal * (self.aVal / 255.0))
+                        #print("r", self.rVal, self.gVal, self.bVal, self.aVal)
+                        self.pi.set_PWM_dutycycle(self.pinR, self.rVal * aValMult)
                         rValTmp = self.rVal
                     if gValTmp != self.gVal:
-                        print("g", self.rVal, self.gVal, self.bVal, self.aVal)
-                        self.pi.set_PWM_dutycycle(self.pinG, self.gVal * (self.aVal / 255.0))
+                        #print("g", self.rVal, self.gVal, self.bVal, self.aVal)
+                        self.pi.set_PWM_dutycycle(self.pinG, self.gVal * aValMult)
                         gValTmp = self.gVal
                     if bValTmp != self.bVal:
-                        print("b", self.rVal, self.gVal, self.bVal, self.aVal)
-                        self.pi.set_PWM_dutycycle(self.pinB, self.bVal * (self.aVal / 255.0))
+                        #print("b", self.rVal, self.gVal, self.bVal, self.aVal)
+                        self.pi.set_PWM_dutycycle(self.pinB, self.bVal * aValMult)
                         bValTmp = self.bVal
                     if aValTmp != self.aVal:
-                        self.pi.set_PWM_dutycycle(self.pinR, self.rVal * (self.aVal / 255.0))
-                        self.pi.set_PWM_dutycycle(self.pinG, self.gVal * (self.aVal / 255.0))
-                        self.pi.set_PWM_dutycycle(self.pinB, self.bVal * (self.aVal / 255.0))
+                        aValMult = self.aVal / 255.0
+                        self.pi.set_PWM_dutycycle(self.pinR, self.rVal * aValMult)
+                        self.pi.set_PWM_dutycycle(self.pinG, self.gVal * aValMult)
+                        self.pi.set_PWM_dutycycle(self.pinB, self.bVal * aValMult)
                         aValTmp = self.aVal
+                    time.sleep(.01)
 
     def flash(self):
         sleepTime = 0

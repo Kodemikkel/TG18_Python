@@ -6,13 +6,13 @@ class HeightControl(threading.Thread):
         print("Initializing HeightControl thread")
         threading.Thread.__init__(self)
         self.pi = pi
-        self.pinMaster = 18 # Physical pin 12
         self.pinUp = 23 # Physical pin 16
         self.pinDown = 24 # Physical pin 18
         self.pinTopPos = 4 # Physical pin 7
         self.pinBottomPos = 25 # Physical pin 22
+        
+        self.state = "None"
  
-        self.pi.set_mode(self.pinMaster, pigpio.OUTPUT)
         self.pi.set_mode(self.pinUp, pigpio.OUTPUT)
         self.pi.set_mode(self.pinDown, pigpio.OUTPUT)
         self.pi.set_mode(self.pinTopPos, pigpio.INPUT)
@@ -28,40 +28,50 @@ class HeightControl(threading.Thread):
 
     def run(self):
         print("Starting HeightControl thread")
+        self.pi.write(self.pinDown, 1)
+        self.pi.write(self.pinUp, 1)
         self.monitorThread.start()
         while True:
             data = self.receiveQueue.get()
             if data[0] == "3": # Indicates data is for us
-                if data[2] == "G" and not self.pi.read(self.pinTopPos): # Indicates "top" has been pressed or "up" is being held
+                print(self.pi.read(self.pinTopPos))
+                print(self.pi.read(self.pinBottomPos))
+                if data[2] == "G" and self.pi.read(self.pinTopPos): # Indicates "top" has been pressed or "up" is being held
                     print("Up")
-                    self.pi.write(self.pinDown, 0)
-                    self.pi.write(self.pinUp, 1)
-                    self.pi.write(self.pinMaster, 1)
-                elif data[2] == "H": # Indicates "up" has been released
+                    self.state = "Move_Up"
+                    self.pi.write(self.pinDown, 1)
                     self.pi.write(self.pinUp, 0)
-                    self.pi.write(self.pinMaster, 0)
+                elif data[2] == "H": # Indicates "up" has been released
+                    self.state = "None"
+                    self.pi.write(self.pinUp, 1)
                 elif data[2] == "I": # Indicates "stop" has been pressed
                     print("Stop")
-                    self.pi.write(self.pinUp, 0)
-                    self.pi.write(self.pinDown, 0)
-                    self.pi.write(self.pinMaster, 0)
-                elif data[2] == "J": # Indicates "down" has been released
-                    self.pi.write(self.pinDown, 0)
-                    self.pi.write(self.pinMaster, 0)
-                elif data[2] == "K" and not self.pi.read(self.pinBottomPos): # Indicates "bottom" has been pressed, or "down" is being held
-                    print("Down")
-                    self.pi.write(self.pinUp, 0)
+                    self.state = "None"
+                    self.pi.write(self.pinUp, 1)
                     self.pi.write(self.pinDown, 1)
-                    self.pi.write(self.pinMaster, 1)
+                elif data[2] == "J": # Indicates "down" has been released
+                    self.state = "None"
+                    self.pi.write(self.pinDown, 1)
+                    self.pi.write(self.pinUp, 1)
+                elif data[2] == "K" and self.pi.read(self.pinBottomPos): # Indicates "bottom" has been pressed, or "down" is being held
+                    print("Down")
+                    self.state = "Move_Down"
+                    self.pi.write(self.pinUp, 0)
+                    self.pi.write(self.pinDown, 0)
             elif data[0] == "0": # Indicates data is for some internal message
                 if data[2] == "A": # Indicates user has disconnected
-                    self.pi.write(self.pinUp, 0)
-                    self.pi.write(self.pinDown, 0)
-                    self.pi.write(self.pinMaster, 0)
+                    self.state = "None"
+                    self.pi.write(self.pinUp, 1)
+                    self.pi.write(self.pinDown, 1)
 
     def monitorInput(self):
         while True:
-            if self.pi.read(self.pinTopPos):
-                self.pi.write(self.pinUp, 0)
-            if self.pi.read(self.pinBottomPos):
-                self.pi.write(self.pinDown, 0)
+            if not self.pi.read(self.pinTopPos) and self.state == "Move_Up":
+                print("Stopping up")
+                self.state = "None"
+                self.pi.write(self.pinUp, 1)
+            if not self.pi.read(self.pinBottomPos) and self.state == "Move_Down":
+                print("Stopping down")
+                self.state = "None"
+                self.pi.write(self.pinUp, 1)
+                self.pi.write(self.pinDown, 1)

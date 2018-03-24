@@ -17,10 +17,10 @@ class PcControl(threading.Thread):
             data = self.receiveQueue.get()
             if data[0] == "4": # Indicates data is for us
                 if data[2] == "G":
-                    self.pi.write(self.pinOnOff, 1)
-                elif data[2] == "H":
                     self.pi.write(self.pinOnOff, 0)
+                elif data[2] == "H":
+                    self.pi.write(self.pinOnOff, 1)
                 elif data[2] == "I":
-                    self.pi.write(self.pinRestart, 1)
-                elif data[2] == "J":
                     self.pi.write(self.pinRestart, 0)
+                elif data[2] == "J":
+                    self.pi.write(self.pinRestart, 1)
