@@ -9,8 +9,8 @@ class LightControl(threading.Thread):
         # Initialize all members
         self.pi = pi
         self.pinR = 17 # Physical pin 11
-        self.pinG = 22 # Physical pin 15    #### SWITCH GREEN AND BLUE AFTER
-        self.pinB = 27 # Physical pin 13    #### TESTING IS COMPLETE
+        self.pinG = 27 # Physical pin 13
+        self.pinB = 22 # Physical pin 15
 
         self.rVal = 0
         self.gVal = 0
@@ -141,15 +141,12 @@ class LightControl(threading.Thread):
                     first = True
                 else:
                     if rValTmp != self.rVal:
-                        #print("r", self.rVal, self.gVal, self.bVal, self.aVal)
                         self.pi.set_PWM_dutycycle(self.pinR, self.rVal * aValMult)
                         rValTmp = self.rVal
                     if gValTmp != self.gVal:
-                        #print("g", self.rVal, self.gVal, self.bVal, self.aVal)
                         self.pi.set_PWM_dutycycle(self.pinG, self.gVal * aValMult)
                         gValTmp = self.gVal
                     if bValTmp != self.bVal:
-                        #print("b", self.rVal, self.gVal, self.bVal, self.aVal)
                         self.pi.set_PWM_dutycycle(self.pinB, self.bVal * aValMult)
                         bValTmp = self.bVal
                     if aValTmp != self.aVal:
