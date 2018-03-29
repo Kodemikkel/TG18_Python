@@ -16,12 +16,13 @@ class Controller():
         self.heightQueue = multiprocessing.Queue()
         self.pcQueue = multiprocessing.Queue()
         self.stateQueue = multiprocessing.Queue()
+	self.sendQueue = multiprocessing.Queue()
         
-        self.bluetoothConnection = BluetoothConnection.BluetoothConnection(self.lightQueue, self.heightQueue, self.pcQueue, self.stateQueue)
+        self.bluetoothConnection = BluetoothConnection.BluetoothConnection(self.lightQueue, self.heightQueue, self.pcQueue, self.stateQueue, self.sendQueue)
         self.lightControl = LightControl.LightControl(self.pi, self.lightQueue, self.stateQueue)
         self.heightControl = HeightControl.HeightControl(self.pi, self.heightQueue)
         self.pcControl = PcControl.PcControl(self.pi, self.pcQueue)
-        self.indication = Indication.Indication(self.pi)
+        self.indication = Indication.Indication(self.pi, self.sendQueue)
         
         self.bluetoothConnection.start()
         self.lightControl.start()

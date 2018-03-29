@@ -3,7 +3,7 @@ from bluetooth import *
 import Queue
 
 class BluetoothConnection(threading.Thread):
-    def __init__(self, lightQueue, heightQueue, pcQueue, stateQueue):
+    def __init__(self, lightQueue, heightQueue, pcQueue, stateQueue, sendQueue):
         print("Initializing BluetoothConnection thread")
         threading.Thread.__init__(self)
         self.name = "Raspberry_BT_Server"
@@ -15,6 +15,9 @@ class BluetoothConnection(threading.Thread):
         self.heightQueue = heightQueue
         self.pcQueue = pcQueue
         self.stateQueue = stateQueue
+	self.sendQueue = sendQueue
+
+	self.sendThread = ""
 
         self.serverSocket.bind(("", PORT_ANY))
         self.serverSocket.listen(1)
@@ -32,6 +35,10 @@ class BluetoothConnection(threading.Thread):
             print("Waiting for connection...")
             self.clientSocket, self.address = self.serverSocket.accept()
             print("Accepted connection from ", self.address, " syncing states...")
+#	    if self.sendThread != "" and self.sendThread.isAlive():
+#		self.sendThread.join()
+	    self.sendThread = threading.Thread(target=self.sendData)
+	    self.sendThread.start()
             self.syncStates()
             while True:
                 try:
@@ -55,6 +62,15 @@ class BluetoothConnection(threading.Thread):
             print("Connection closed... states saved")
 
         self.serverSocket.close()
+
+    def sendData(self):
+	print("Sending data")
+	while True:
+	    try:
+		data = self.sendQueue.get()
+		self.clientSocket.send(data)
+	    except BluetoothError as e:
+		break
 
     def syncStates(self):
         while True:

@@ -2,7 +2,7 @@ import pigpio
 import time
 
 class Indication():
-    def __init__(self, pi):
+    def __init__(self, pi, sendQueue):
         self.pi = pi
         self.pinWaterSwitch = 20 # Physical pin 38
         self.pinSodaSwitch = 21 # Physical pin 40
@@ -20,6 +20,8 @@ class Indication():
         self.pi.set_glitch_filter(self.pinWaterSwitch, 5000)
         self.pi.set_glitch_filter(self.pinSodaSwitch, 5000)
 
+	self.sendQueue = sendQueue
+
         waterCallback = self.pi.callback(self.pinWaterSwitch, pigpio.EITHER_EDGE, self.indicateWater)
         sodaCallback = self.pi.callback(self.pinSodaSwitch, pigpio.EITHER_EDGE, self.indicateSoda)
 
@@ -32,4 +34,5 @@ class Indication():
     def indicateSoda(self, gpio, level, tick):
         time.sleep(2) # Delay for 2 seconds to avoid false indication
         self.pi.write(self.pinSodaInd, not self.pi.read(self.pinSodaSwitch))
+	self.sendQueue.put(";1_G0000000") # Add message for indication of low soda to sendQueue
         print("Soda", gpio, level, tick)
